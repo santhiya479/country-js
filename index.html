@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Country Management Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">🌍</span>
+        <span class="brand-name">GeoAdmin</span>
+        <button type="button" class="icon-btn sidebar-close" id="sidebarCloseBtn" aria-label="Close navigation">✕</button>
+      </div>
+
+      <nav class="nav">
+        <a href="#top" class="nav-link active"><span class="nav-icon" aria-hidden="true">📊</span> Dashboard</a>
+        <a href="#countriesSection" class="nav-link"><span class="nav-icon" aria-hidden="true">🗺️</span> Countries</a>
+        <button type="button" class="nav-link" id="navAdd"><span class="nav-icon" aria-hidden="true">➕</span> Add Country</button>
+        <button type="button" class="nav-link" id="navRefetch"><span class="nav-icon" aria-hidden="true">🔄</span> Reload from API</button>
+      </nav>
+
+      <div class="sidebar-footer">Data source: REST Countries API</div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- ===== Main ===== -->
+    <div class="main">
+      <header class="topbar" id="top">
+        <button type="button" class="icon-btn menu-btn" id="menuBtn" aria-label="Toggle navigation">☰</button>
+        <div class="topbar-title">
+          <h1>Country Management Dashboard</h1>
+          <p class="subtitle">Browse, search and manage countries around the world</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="addCountryBtn">+ Add Country</button>
+      </header>
+
+      <main class="content">
+
+        <!-- Stats -->
+        <section class="stats" aria-label="Dashboard statistics">
+          <div class="stat-card">
+            <div class="stat-icon blue" aria-hidden="true">🌐</div>
+            <div>
+              <p class="stat-label">Total Countries</p>
+              <p class="stat-value" id="statTotal">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green" aria-hidden="true">🧭</div>
+            <div>
+              <p class="stat-label">Total Regions</p>
+              <p class="stat-value" id="statRegions">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange" aria-hidden="true">🔎</div>
+            <div>
+              <p class="stat-label">Showing (Filtered)</p>
+              <p class="stat-value" id="statShowing">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon purple" aria-hidden="true">👥</div>
+            <div>
+              <p class="stat-label">Total Population</p>
+              <p class="stat-value" id="statPopulation">0</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Toolbar -->
+        <section class="toolbar" aria-label="Search and filters">
+          <div class="search-box">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="search" id="searchInput" placeholder="Search by country or capital..." autocomplete="off" aria-label="Search countries">
+          </div>
+          <select id="regionFilter" aria-label="Filter by region">
+            <option value="all">All Regions</option>
+            <option value="Africa">Africa</option>
+            <option value="Americas">Americas</option>
+            <option value="Asia">Asia</option>
+            <option value="Europe">Europe</option>
+            <option value="Oceania">Oceania</option>
+            <option value="Antarctic">Antarctic</option>
+          </select>
+          <button type="button" class="btn btn-light" id="resetFiltersBtn">Reset Filters</button>
+        </section>
+
+        <!-- Countries -->
+        <section class="countries-section" id="countriesSection" aria-label="Countries">
+          <div class="section-head">
+            <h2>Countries</h2>
+            <p class="result-info" id="resultInfo"></p>
+          </div>
+
+          <div class="state-box" id="loadingState" hidden>
+            <div class="spinner" role="status" aria-label="Loading"></div>
+            <p>Loading countries...</p>
+          </div>
+
+          <div class="state-box" id="errorState" hidden>
+            <div class="state-emoji" aria-hidden="true">⚠️</div>
+            <h3>Could not load countries</h3>
+            <p id="errorMessage">Something went wrong.</p>
+            <button type="button" class="btn btn-primary" id="retryBtn">Try Again</button>
+          </div>
+
+          <div class="state-box" id="emptyState" hidden>
+            <div class="state-emoji" aria-hidden="true">🗂️</div>
+            <h3 id="emptyTitle">No countries found</h3>
+            <p id="emptyText">Try a different search or region.</p>
+            <div class="state-actions">
+              <button type="button" class="btn btn-light" id="emptyResetBtn">Reset Filters</button>
+              <button type="button" class="btn btn-primary" id="emptyAddBtn">+ Add Country</button>
+            </div>
+          </div>
+
+          <div class="country-grid" id="countryGrid"></div>
+
+          <nav class="pagination" id="pagination" aria-label="Pagination"></nav>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ===== Add / Edit Modal ===== -->
+  <div class="modal" id="formModal" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 id="formTitle">Add Country</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <form id="countryForm" novalidate>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="fieldName">Country Name <span class="req">*</span></label>
+            <input type="text" id="fieldName" maxlength="100" placeholder="e.g. India" autocomplete="off" required>
+            <span class="field-error" data-error-for="name"></span>
+          </div>
+          <div class="form-group">
+            <label for="fieldCapital">Capital <span class="req">*</span></label>
+            <input type="text" id="fieldCapital" maxlength="100" placeholder="e.g. New Delhi" autocomplete="off">
+            <span class="field-error" data-error-for="capital"></span>
+          </div>
+          <div class="form-group">
+            <label for="fieldRegion">Region <span class="req">*</span></label>
+            <select id="fieldRegion">
+              <option value="">Select a region</option>
+              <option value="Africa">Africa</option>
+              <option value="Americas">Americas</option>
+              <option value="Asia">Asia</option>
+              <option value="Europe">Europe</option>
+              <option value="Oceania">Oceania</option>
+              <option value="Antarctic">Antarctic</option>
+            </select>
+            <span class="field-error" data-error-for="region"></span>
+          </div>
+          <div class="form-group">
+            <label for="fieldPopulation">Population <span class="req">*</span></label>
+            <input type="text" id="fieldPopulation" inputmode="numeric" placeholder="e.g. 1400000000" autocomplete="off">
+            <span class="field-error" data-error-for="population"></span>
+          </div>
+          <div class="form-group">
+            <label for="fieldFlag">Flag Image URL <span class="req">*</span></label>
+            <input type="url" id="fieldFlag" placeholder="https://flagcdn.com/in.svg" autocomplete="off">
+            <span class="field-error" data-error-for="flag"></span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-close>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="formSubmitBtn">Add Country</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== View Details Modal ===== -->
+  <div class="modal" id="viewModal" role="dialog" aria-modal="true" aria-labelledby="viewTitle">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 id="viewTitle">Country Details</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="viewBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-close>Close</button>
+        <button type="button" class="btn btn-primary" id="viewEditBtn">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Confirmation Modal ===== -->
+  <div class="modal" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-header">
+        <h2 id="confirmTitle">Confirm</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-close>Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmOkBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Toast Container ===== -->
+  <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
